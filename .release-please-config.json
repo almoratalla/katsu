@@ -3,6 +3,8 @@
         ".": {
             "release-type": "node",
             "package-name": "katsu",
+            "bootstrap-sha": "68f8b2d9f698317abfdeea746ee748742a5ece8a",
+            "initial-version": "0.1.0",
             "changelog-sections": [
                 { "type": "feat", "section": "Features" },
                 { "type": "fix", "section": "Bug Fixes" },
@@ -13,12 +15,13 @@
                 { "type": "refactor", "section": "Code Refactoring" },
                 { "type": "test", "section": "Tests" },
                 { "type": "build", "section": "Build System" },
-                { "type": "ci", "section": "Continuous Integration" }
+                { "type": "ci", "section": "Continuous Integration" },
+                { "type": "chore", "section": "Miscellaneous" }
             ],
             "version-file": "package.json",
             "include-component-in-tag": false,
             "release-notes": true,
-            "pull-request-title-pattern": "chore${scope}: release${component} v${version}",
+            "pull-request-title-pattern": "chore: release v${version}",
             "pull-request-header": "This PR contains changes for the next release.",
             "changelog-path": "CHANGELOG.md",
             "changelog-type": "github"
