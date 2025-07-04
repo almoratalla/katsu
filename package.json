@@ -5,7 +5,14 @@
     "main": "index.js",
     "scripts": {
         "commit": "cz",
-        "prepare": "husky install"
+        "prepare": "husky install",
+        "build": "echo 'Build script not configured yet'",
+        "test": "echo 'Test script not configured yet'",
+        "lint": "echo 'Lint script not configured yet'",
+        "format": "echo 'Format script not configured yet'",
+        "format:check": "echo 'Format check script not configured yet'",
+        "release": "echo 'Release handled by GitHub Actions'",
+        "version": "echo 'Version handled by release-please'"
     },
     "config": {
         "commitizen": {
