@@ -409,136 +409,251 @@ GitHub branch protection can be configured to require:
 -   **Wrong version bump**: Verify commit types (feat/fix/BREAKING)
 -   **Missing changelog**: Ensure commits follow conventional format
 
-## 📚 Best Practices
+## 🚨 Troubleshooting Release-Please Issues
 
-### Commit Messages
+### Problem: Non-Conventional Commit History
 
--   Use present tense ("Add feature" not "Added feature")
--   Use imperative mood ("Move cursor to..." not "Moves cursor to...")
--   Keep first line under 72 characters
--   Reference issues and pull requests when applicable
+**Symptoms**:
 
-### Version Management
-
--   Follow semantic versioning strictly
--   Use conventional commits for automatic version bumping
--   Document breaking changes clearly
--   Keep changelog up to date
-
-### Code Quality
-
--   Use pre-commit hooks for consistent formatting
--   Run tests before pushing
--   Review release PRs carefully
--   Maintain clean git history
-
-## 🛠️ Commands Reference
-
-### Development Commands
-
-```bash
-# Interactive commit creation
-npm run commit
-
-# Install dependencies
-npm install
-
-# Build project (configure when ready)
-npm run build
-
-# Run tests (configure when ready)
-npm test
-
-# Run linting (configure when ready)
-npm run lint
-
-# Format code (configure when ready)
-npm run format
+```
+❯ commit could not be parsed: 95a611b8281471fc5eda7f98a9a525ade5b3e4cb Initialsetup (#4)
+❯ error message: Error: unexpected token ' ' at 1:13, valid tokens [(, !, :]
+❯ commit could not be parsed: 68f8b2d9f698317abfdeea746ee748742a5ece8a Merge branch 'main' of github.com:almoratalla/katsu
+Error: release-please failed: Invalid previous_tag parameter
 ```
 
-### Git Commands
+**Root Cause**:
+Existing commits don't follow conventional commit format:
 
-```bash
-# Stage all changes
-git add .
+-   `Initial commit` (should be `feat: initial project setup`)
+-   `Merge branch 'main'` (merge commits)
+-   `Initialsetup (#4)` (should be `feat: initial setup`)
+-   `add readme.md` (should be `docs: add readme file`)
 
-# Push to remote
-git push
+### Solution Options
 
-# Check status
-git status
+#### Option 1: Bootstrap from Current State (Recommended)
 
-# View commit history
-git log --oneline
+This approach starts fresh from your current commit without rewriting history:
+
+1. **Update Release-Please Configuration**:
+
+    ```json
+    {
+        "packages": {
+            ".": {
+                "release-type": "node",
+                "package-name": "katsu",
+                "bootstrap-sha": "YOUR_CURRENT_COMMIT_SHA",
+                "initial-version": "0.1.0",
+                "changelog-sections": [
+                    { "type": "feat", "section": "Features" },
+                    { "type": "fix", "section": "Bug Fixes" },
+                    { "type": "docs", "section": "Documentation" },
+                    { "type": "chore", "section": "Miscellaneous" }
+                ],
+                "version-file": "package.json"
+            }
+        }
+    }
+    ```
+
+2. **Update Manifest File**:
+
+    ```json
+    {
+        ".": "0.1.0"
+    }
+    ```
+
+3. **Create Your First Conventional Commit**:
+
+    ```bash
+    # Make a small change (or just update README)
+    echo "# Katsu Backend Service" > README.md
+    git add README.md
+
+    # Use conventional commit format
+    git commit -m "feat: initialize project with CI/CD pipeline and conventional commits"
+    git push origin main
+    ```
+
+#### Option 2: Create Manual Initial Release
+
+If you want to mark your current state as v0.1.0:
+
+1. **Create and Push Initial Tag**:
+
+    ```bash
+    # Create initial tag
+    git tag v0.1.0
+    git push origin v0.1.0
+    ```
+
+2. **Update Manifest**:
+
+    ```json
+    {
+        ".": "0.1.0"
+    }
+    ```
+
+3. **Make Next Conventional Commit**:
+    ```bash
+    # Any change with conventional format
+    git commit -m "chore: setup automated release pipeline"
+    git push origin main
+    ```
+
+#### Option 3: Rewrite History (Advanced - Use with Caution)
+
+⚠️ **Warning**: Only use if you're the only developer and haven't shared the repository widely.
+
+1. **Interactive Rebase**:
+
+    ```bash
+    # Rebase to fix commit messages
+    git rebase -i --root
+
+    # Change commit messages to conventional format:
+    # Initial commit → feat: initial project setup
+    # add readme.md → docs: add project readme
+    # Merge commits can be dropped or kept as-is
+    ```
+
+2. **Force Push** (Dangerous):
+    ```bash
+    git push --force-with-lease origin main
+    ```
+
+### Step-by-Step Fix (Option 1 - Recommended)
+
+1. **Update `.release-please-config.json`**:
+
+    ```json
+    {
+        "packages": {
+            ".": {
+                "release-type": "node",
+                "package-name": "katsu",
+                "bootstrap-sha": "68f8b2d9f698317abfdeea746ee748742a5ece8a",
+                "initial-version": "0.1.0",
+                "changelog-sections": [
+                    { "type": "feat", "section": "Features" },
+                    { "type": "fix", "section": "Bug Fixes" },
+                    { "type": "perf", "section": "Performance Improvements" },
+                    { "type": "docs", "section": "Documentation" },
+                    { "type": "style", "section": "Styles" },
+                    { "type": "refactor", "section": "Code Refactoring" },
+                    { "type": "test", "section": "Tests" },
+                    { "type": "build", "section": "Build System" },
+                    { "type": "ci", "section": "Continuous Integration" },
+                    { "type": "chore", "section": "Miscellaneous" }
+                ],
+                "version-file": "package.json",
+                "include-component-in-tag": false,
+                "pull-request-title-pattern": "chore: release v${version}",
+                "changelog-path": "CHANGELOG.md"
+            }
+        }
+    }
+    ```
+
+2. **Update `.release-please-manifest.json`**:
+
+    ```json
+    {
+        ".": "0.1.0"
+    }
+    ```
+
+3. **Create Bootstrap Commit**:
+
+    ```bash
+    # Stage the config changes
+    git add .release-please-config.json .release-please-manifest.json
+
+    # Commit with proper conventional format
+    git commit -m "feat: configure automated release pipeline with conventional commits"
+
+    # Push to trigger release-please
+    git push origin main
+    ```
+
+### Understanding the Bootstrap Process
+
+**What `bootstrap-sha` does**:
+
+-   Tells release-please to start analyzing commits from a specific SHA
+-   Ignores all commits before that SHA
+-   Allows you to "start fresh" with conventional commits
+
+**What `initial-version` does**:
+
+-   Sets the starting version for your project
+-   Usually `0.1.0` for new projects
+-   Can be `1.0.0` if you consider your project stable
+
+### Expected Behavior After Fix
+
+1. **First Run**: Release-please will create a PR for v0.1.0 based on your bootstrap commit
+2. **Future Commits**: Only conventional commits after the bootstrap will be analyzed
+3. **Clean History**: Your changelog will only include properly formatted commits
+
+### Verification Steps
+
+After implementing the fix:
+
+1. **Check GitHub Actions**: Look for successful release-please runs
+2. **Look for Release PR**: Should create "chore: release v0.1.0" PR
+3. **Review Changelog**: Should contain only your new conventional commits
+4. **Merge Release PR**: Creates your first proper release
+
+### Prevention for Future
+
+1. **Use Commitizen**: Always use `npm run commit` for interactive commits
+2. **Set up Branch Protection**: Require status checks before merging
+3. **Enable Commitlint**: Validates commit messages in CI
+4. **Team Training**: Ensure all developers understand conventional commits
+
+### Common Bootstrap Scenarios
+
+#### Starting from Scratch
+
+```json
+{
+    "initial-version": "0.1.0",
+    "bootstrap-sha": "current-commit-sha"
+}
 ```
 
-### Release Commands
+#### Existing Stable Project
 
-```bash
-# Manual release (handled by GitHub Actions)
-# No manual commands needed - automated via PR merge
+```json
+{
+    "initial-version": "1.0.0",
+    "bootstrap-sha": "latest-release-commit"
+}
 ```
 
-## 📖 Additional Resources
+#### Beta/Pre-release
 
-### Documentation
-
--   [GitHub Actions Documentation](https://docs.github.com/en/actions)
--   [npm Scripts Guide](https://docs.npmjs.com/cli/v8/using-npm/scripts)
--   [Git Documentation](https://git-scm.com/doc)
-
-### Tools & Extensions
-
--   [VS Code Conventional Commits Extension](https://marketplace.visualstudio.com/items?itemName=vivaxy.vscode-conventional-commits)
--   [GitLens VS Code Extension](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens)
--   [GitHub CLI](https://cli.github.com/)
-
-### Community Standards
-
--   [Keep a Changelog](https://keepachangelog.com/)
--   [Choose a License](https://choosealicense.com/)
--   [All Contributors](https://allcontributors.org/)
-
-## 🎨 Release Notes Configuration
-
-### Automatic Generation
-
-Release notes are automatically generated from:
-
--   Commit messages using conventional commits
--   PR titles and descriptions
--   Changelog sections configuration
-
-### Customization
-
-Edit `.release-please-config.json` to:
-
--   Modify changelog sections
--   Change PR title patterns
--   Customize release note format
--   Add custom headers/footers
-
-### Example Release Notes Output
-
-```markdown
-## [1.2.0] - 2025-01-XX
-
-### Features
-
--   feat: add user authentication system
--   feat: implement file upload functionality
-
-### Bug Fixes
-
--   fix: resolve memory leak in data processing
--   fix: correct API response formatting
-
-### Documentation
-
--   docs: update API documentation
--   docs: add contributing guidelines
+```json
+{
+    "initial-version": "0.1.0-beta.1",
+    "bootstrap-sha": "current-commit-sha"
+}
 ```
+
+### Recovery from Failed Releases
+
+If release-please is completely broken:
+
+1. **Delete Release PRs**: Close any existing release PRs
+2. **Remove Tags**: `git tag -d v1.0.0 && git push origin :refs/tags/v1.0.0`
+3. **Reset Configuration**: Use bootstrap approach above
+4. **Start Fresh**: Create new conventional commit
 
 ---
 
-**Note**: This documentation will be updated as the project evolves. Keep it as a reference for the development team.
+**Note**: The bootstrap approach is the safest and most commonly used method for adding release-please to existing repositories. It preserves your git history while enabling automated releases going forward.
