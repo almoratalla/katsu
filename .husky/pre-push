@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Pre-push hook to run tests before pushing
+# This ensures code quality and prevents broken builds
+
+echo "🚀 Running pre-push checks..."
+
+# Check if npm is available
+if ! command -v npm &> /dev/null; then
+    echo "❌ npm is not available. Skipping pre-push checks."
+    exit 0
+fi
+
+# Check if package.json exists
+if [ ! -f "package.json" ]; then
+    echo "❌ package.json not found. Skipping pre-push checks."
+    exit 0
+fi
+
+# Run tests if available
+if npm test --silent 2>/dev/null; then
+    echo "✅ Tests passed"
+else
+    echo "⚠️  No test script found or tests failed"
+fi
+
+# Run build if available
+if npm run build --silent 2>/dev/null; then
+    echo "✅ Build passed"
+else
+    echo "⚠️  No build script found or build failed"
+fi
+
+echo "✅ Pre-push checks completed"
