@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Exit if commitlint is not installed
+command -v commitlint >/dev/null 2>&1 || {
+  echo "commitlint is not installed. Skipping commit message check."
+  exit 0
+}
+
+npx --no -- commitlint --edit "$1"

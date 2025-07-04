@@ -1,0 +1,32 @@
+{
+    "name": "katsu",
+    "version": "1.0.0",
+    "description": "Katsu is a modular, TypeScript-based backend service built using **Clean Architecture** principles. It serves as the core API layer for multiple applications such as:",
+    "main": "index.js",
+    "scripts": {
+        "commit": "cz",
+        "prepare": "husky install"
+    },
+    "config": {
+        "commitizen": {
+            "path": "cz-conventional-changelog"
+        }
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/almoratalla/katsu.git"
+    },
+    "author": "",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/almoratalla/katsu/issues"
+    },
+    "homepage": "https://github.com/almoratalla/katsu#readme",
+    "devDependencies": {
+        "@commitlint/cli": "^19.8.1",
+        "@commitlint/config-conventional": "^19.8.1",
+        "commitizen": "^4.3.1",
+        "cz-conventional-changelog": "^3.3.0",
+        "husky": "^9.1.7"
+    }
+}
