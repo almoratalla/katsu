@@ -233,11 +233,21 @@ docker-compose.yml
 docker-compose.yaml
 
 # Kubernetes
-*.yaml
-*.yml
-!package.json
-!commitlint.config.js
-!.github/
+k8s/
+kubernetes/
+manifests/
+deployment.yaml
+deployment.yml
+service.yaml
+service.yml
+ingress.yaml
+ingress.yml
+configmap.yaml
+configmap.yml
+secret.yaml
+secret.yml
+kustomization.yaml
+kustomization.yml
 
 # Monitoring and APM
 newrelic_agent.log

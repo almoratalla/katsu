@@ -191,6 +191,224 @@ Release notes are automatically generated from:
     -   Build validation
     -   Final quality checks
 
+## 🔄 CI/CD Workflows
+
+### GitHub Actions Setup
+
+The project uses two main workflows for automated quality assurance and release management:
+
+#### 1. CI Workflow (`.github/workflows/ci.yml`)
+
+**Purpose**: Continuous Integration - Quality assurance and validation on every code change
+
+**Triggers**:
+
+-   Push to `main` or `develop` branches
+-   Pull requests targeting `main` or `develop`
+
+**Jobs**:
+
+1. **Lint and Format Check**
+
+    - Runs ESLint for code quality
+    - Checks Prettier formatting
+    - Uses `continue-on-error: true` for graceful handling
+
+2. **Test Suite**
+
+    - Matrix testing on Node.js 18.x and 20.x
+    - Runs unit and integration tests
+    - Uploads coverage reports to Codecov
+    - Parallel execution for faster feedback
+
+3. **Build Check**
+
+    - Validates TypeScript compilation
+    - Checks for build artifacts
+    - Ensures project builds successfully
+
+4. **Commit Message Validation**
+
+    - Validates conventional commits in pull requests
+    - Uses commitlint to check commit history
+    - Only runs on pull requests
+
+5. **Security Audit**
+
+    - Runs `npm audit` for vulnerability scanning
+    - Checks for outdated dependencies
+    - Continues on errors to not block development
+
+6. **TypeScript Type Check**
+
+    - Validates TypeScript compilation without emitting files
+    - Runs `npx tsc --noEmit`
+    - Ensures type safety
+
+7. **Quality Gate**
+    - Final validation job that depends on all others
+    - Fails if critical jobs (lint, test, build) fail
+    - Provides comprehensive status summary
+
+#### 2. Release Workflow (`.github/workflows/release.yml`)
+
+**Purpose**: Automated release management with semantic versioning
+
+**Triggers**:
+
+-   Push to `main` branch only (after CI passes)
+
+**Jobs**:
+
+1. **Release Please**
+
+    - Analyzes conventional commits
+    - Calculates semantic version bumps
+    - Creates/updates release pull requests
+    - Generates changelogs automatically
+
+2. **Build and Test** (runs when release is created)
+    - Builds the project
+    - Runs full test suite
+    - Validates release artifacts
+
+**Features**:
+
+-   Automatic CHANGELOG.md generation
+-   GitHub releases with release notes
+-   Semantic versioning (major.minor.patch)
+-   Release pull request automation
+
+### Workflow Sequence
+
+```
+Developer commits → CI runs on PR → CI passes? → Merge to main → Release-please runs → Creates release PR → Merge release PR → New release created
+```
+
+### Configuration Files
+
+#### CI Configuration
+
+The CI workflow uses your existing project configuration:
+
+-   `package.json` scripts for build/test/lint
+-   `commitlint.config.js` for commit validation
+-   `.husky/` hooks for local validation
+
+#### Release Configuration
+
+-   `.release-please-config.json`: Main release-please configuration
+-   `.release-please-manifest.json`: Version tracking
+-   Conventional commits drive version bumping
+
+### Best Practices
+
+#### CI Workflow
+
+-   **Fast feedback**: Jobs run in parallel
+-   **Non-blocking**: Uses `continue-on-error` for non-critical checks
+-   **Comprehensive**: Covers code quality, security, and functionality
+-   **Matrix testing**: Tests on multiple Node.js versions
+
+#### Release Workflow
+
+-   **Automated**: No manual version bumping needed
+-   **Semantic**: Follows semantic versioning strictly
+-   **Documented**: Generates comprehensive changelogs
+-   **Reviewable**: Creates PRs for release review
+
+### Job Dependencies
+
+```yaml
+# CI Jobs run in parallel (except Quality Gate)
+lint-and-format ─┐
+test ─────────────┤
+build ────────────┤──→ quality-gate
+dependency-audit ─┤
+type-check ───────┘
+
+# Release Jobs run sequentially
+release → build-and-test (if release created)
+```
+
+### Status Checks
+
+GitHub branch protection can be configured to require:
+
+-   All CI jobs to pass before merging
+-   Up-to-date branches
+-   Linear history (optional)
+
+### Monitoring and Debugging
+
+#### CI Failures
+
+-   Check the Actions tab in GitHub
+-   Review failed job logs
+-   Common issues: missing scripts, dependency problems, test failures
+
+#### Release Issues
+
+-   Ensure conventional commits are used
+-   Check release-please configuration
+-   Verify GitHub permissions for the action
+
+### Performance Optimization
+
+#### CI Optimizations
+
+-   **Caching**: Uses Node.js dependency caching
+-   **Parallel execution**: Multiple jobs run simultaneously
+-   **Conditional runs**: Some jobs only run on specific conditions
+-   **continue-on-error**: Prevents blocking on non-critical failures
+
+#### Release Optimizations
+
+-   **Selective builds**: Only builds when release is created
+-   **Conditional publishing**: Can be configured for npm/registry publishing
+
+### Security Considerations
+
+#### CI Security
+
+-   **Dependency auditing**: Scans for known vulnerabilities
+-   **Limited permissions**: Jobs run with minimal required permissions
+-   **Secret management**: Uses GitHub Secrets for sensitive data
+
+#### Release Security
+
+-   **Branch protection**: Requires reviews and checks
+-   **Signed commits**: Can be configured for commit signing
+-   **Release verification**: Build and test before release
+
+### Extension Points
+
+#### Adding New CI Checks
+
+1. Add new job to `ci.yml`
+2. Configure job dependencies
+3. Update quality gate logic if needed
+
+#### Customizing Releases
+
+1. Modify `.release-please-config.json`
+2. Add custom changelog sections
+3. Configure release notes templates
+
+### Troubleshooting
+
+#### Common CI Issues
+
+-   **Missing scripts**: Update `package.json` with actual implementations
+-   **Dependency conflicts**: Check `package-lock.json`
+-   **Test failures**: Review test output in job logs
+
+#### Common Release Issues
+
+-   **No release PR created**: Check conventional commit format
+-   **Wrong version bump**: Verify commit types (feat/fix/BREAKING)
+-   **Missing changelog**: Ensure commits follow conventional format
+
 ## 📚 Best Practices
 
 ### Commit Messages
