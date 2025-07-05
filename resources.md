@@ -409,219 +409,162 @@ GitHub branch protection can be configured to require:
 -   **Wrong version bump**: Verify commit types (feat/fix/BREAKING)
 -   **Missing changelog**: Ensure commits follow conventional format
 
-## 📚 Best Practices
+### GitHub Permissions and Branch Protection Issues
 
-### Commit Messages
+#### Error: "Reference update failed" (HTTP 422)
 
--   Use present tense ("Add feature" not "Added feature")
--   Use imperative mood ("Move cursor to..." not "Moves cursor to...")
--   Keep first line under 72 characters
--   Reference issues and pull requests when applicable
+**What this means**:
+The error `Reference update failed` when creating branch `release-please--branches--main--components--katsu` indicates that release-please successfully analyzed your commits but cannot create the release branch due to GitHub repository settings.
 
-### Version Management
+**Root Causes**:
 
--   Follow semantic versioning strictly
--   Use conventional commits for automatic version bumping
--   Document breaking changes clearly
--   Keep changelog up to date
+1. **Branch Protection Rules**: Your main branch may have protection rules preventing branch creation
+2. **Insufficient GitHub Token Permissions**: The GITHUB_TOKEN may lack required permissions
+3. **Repository Settings**: Actions may not be allowed to create pull requests
 
-### Code Quality
+**Solutions**:
 
--   Use pre-commit hooks for consistent formatting
--   Run tests before pushing
--   Review release PRs carefully
--   Maintain clean git history
+#### Solution 1: Check GitHub Actions Permissions
 
-## 🛠️ Commands Reference
+1. **Go to Repository Settings**:
+   - Navigate to your GitHub repository
+   - Click "Settings" → "Actions" → "General"
 
-### Development Commands
+2. **Update Workflow Permissions**:
+   ```
+   ✅ Read and write permissions
+   ✅ Allow GitHub Actions to create and approve pull requests
+   ```
 
-    ```bash
-    # Make a small change (or just update README)
-    echo "# Katsu Backend Service" > README.md
-    git add README.md
+3. **Specific Permission Settings**:
+   - **Workflow permissions**: Select "Read and write permissions"
+   - **Pull request permissions**: Check "Allow GitHub Actions to create and approve pull requests"
 
-    # Use conventional commit format
-    git commit -m "feat: initialize project with CI/CD pipeline and conventional commits"
-    git push origin main
-    ```
+#### Solution 2: Update Release Workflow
 
-#### Option 2: Create Manual Initial Release
+Add explicit permissions to your release workflow:
 
-If you want to mark your current state as v0.1.0:
+```yaml
+name: Release
 
-1. **Create and Push Initial Tag**:
+on:
+    push:
+        branches:
+            - main
 
-    ```bash
-    # Create initial tag
-    git tag v0.1.0
-    git push origin v0.1.0
-    ```
+permissions:
+    contents: write
+    pull-requests: write
+    issues: write
+    repository-projects: write
 
-2. **Update Manifest**:
+jobs:
+    # ...existing jobs...
+```
 
-    ```json
-    {
-        ".": "0.1.0"
-    }
-    ```
+#### Solution 3: Check Branch Protection Rules
 
-3. **Make Next Conventional Commit**:
-    ```bash
-    # Any change with conventional format
-    git commit -m "chore: setup automated release pipeline"
-    git push origin main
-    ```
+1. **Repository Settings** → **Branches**
+2. **Branch protection rules for main**:
+   - Ensure "Restrict pushes that create files that don't exist" is disabled
+   - Or add GitHub Actions to bypass restrictions
+   - Allow force pushes for service accounts (if needed)
 
-#### Option 3: Rewrite History (Advanced - Use with Caution)
+#### Solution 4: Manual Branch Creation (Temporary Fix)
 
-⚠️ **Warning**: Only use if you're the only developer and haven't shared the repository widely.
+If permissions can't be adjusted immediately:
 
-1. **Interactive Rebase**:
+1. **Create the release branch manually**:
+   ```bash
+   # Create the branch release-please is trying to create
+   git checkout -b release-please--branches--main--components--katsu
+   
+   # Create a simple change for the release
+   echo "# Release v0.1.0" > CHANGELOG.md
+   git add CHANGELOG.md
+   git commit -m "chore: release v0.1.0"
+   
+   # Push the branch
+   git push origin release-please--branches--main--components--katsu
+   ```
 
-    ```bash
-    # Rebase to fix commit messages
-    git rebase -i --root
+2. **Create Pull Request manually**:
+   - Go to GitHub
+   - Create PR from the release branch to main
+   - Title: "chore: release v0.1.0"
 
-    # Change commit messages to conventional format:
-    # Initial commit → feat: initial project setup
-    # add readme.md → docs: add project readme
-    # Merge commits can be dropped or kept as-is
-    ```
+#### Solution 5: Alternative Token (Advanced)
 
-2. **Force Push** (Dangerous):
-    ```bash
-    git push --force-with-lease origin main
-    ```
+If repository settings can't be changed, use a Personal Access Token:
 
-### Step-by-Step Fix (Option 1 - Recommended)
+1. **Create Personal Access Token**:
+   - GitHub → Settings → Developer settings → Personal access tokens
+   - Generate token with `repo` and `workflow` scopes
 
-1. **Update `.release-please-config.json`**:
+2. **Add to Repository Secrets**:
+   - Repository → Settings → Secrets and variables → Actions
+   - Add secret named `RELEASE_TOKEN`
 
-    ```json
-    {
-        "packages": {
-            ".": {
-                "release-type": "node",
-                "package-name": "katsu",
-                "bootstrap-sha": "68f8b2d9f698317abfdeea746ee748742a5ece8a",
-                "initial-version": "0.1.0",
-                "changelog-sections": [
-                    { "type": "feat", "section": "Features" },
-                    { "type": "fix", "section": "Bug Fixes" },
-                    { "type": "perf", "section": "Performance Improvements" },
-                    { "type": "docs", "section": "Documentation" },
-                    { "type": "style", "section": "Styles" },
-                    { "type": "refactor", "section": "Code Refactoring" },
-                    { "type": "test", "section": "Tests" },
-                    { "type": "build", "section": "Build System" },
-                    { "type": "ci", "section": "Continuous Integration" },
-                    { "type": "chore", "section": "Miscellaneous" }
-                ],
-                "version-file": "package.json",
-                "include-component-in-tag": false,
-                "pull-request-title-pattern": "chore: release v${version}",
-                "changelog-path": "CHANGELOG.md"
-            }
-        }
-    }
-    ```
-
-2. **Update `.release-please-manifest.json`**:
-
-    ```json
-    {
-        ".": "0.1.0"
-    }
-    ```
-
-3. **Create Bootstrap Commit**:
-
-    ```bash
-    # Stage the config changes
-    git add .release-please-config.json .release-please-manifest.json
-
-    # Commit with proper conventional format
-    git commit -m "feat: configure automated release pipeline with conventional commits"
-
-    # Push to trigger release-please
-    git push origin main
-    ```
-
-### Understanding the Bootstrap Process
-
-**What `bootstrap-sha` does**:
-
--   Tells release-please to start analyzing commits from a specific SHA
--   Ignores all commits before that SHA
--   Allows you to "start fresh" with conventional commits
-
-**What `initial-version` does**:
-
--   Sets the starting version for your project
--   Usually `0.1.0` for new projects
--   Can be `1.0.0` if you consider your project stable
-
-### Expected Behavior After Fix
-
-1. **First Run**: Release-please will create a PR for v0.1.0 based on your bootstrap commit
-2. **Future Commits**: Only conventional commits after the bootstrap will be analyzed
-3. **Clean History**: Your changelog will only include properly formatted commits
+3. **Update workflow to use custom token**:
+   ```yaml
+   - name: Release Please
+     uses: googleapis/release-please-action@v4
+     id: release
+     with:
+         token: ${{ secrets.RELEASE_TOKEN }}
+         config-file: .release-please-config.json
+         manifest-file: .release-please-manifest.json
+   ```
 
 ### Verification Steps
 
-After implementing the fix:
+After fixing permissions:
 
-1. **Check GitHub Actions**: Look for successful release-please runs
-2. **Look for Release PR**: Should create "chore: release v0.1.0" PR
-3. **Review Changelog**: Should contain only your new conventional commits
-4. **Merge Release PR**: Creates your first proper release
+1. **Re-run the workflow**: Push a new commit to trigger release-please
+2. **Check for success**: Look for successful branch creation in Actions logs
+3. **Verify PR creation**: A release PR should appear in your repository
+4. **Review changelog**: The PR should contain a generated CHANGELOG.md
 
-### Prevention for Future
+### Success Indicators
 
-1. **Use Commitizen**: Always use `npm run commit` for interactive commits
-2. **Set up Branch Protection**: Require status checks before merging
-3. **Enable Commitlint**: Validates commit messages in CI
-4. **Team Training**: Ensure all developers understand conventional commits
+✅ **Release-please is working correctly** - it successfully:
+- Parsed your conventional commits
+- Determined version bump needed
+- Attempted to create release branch
 
-### Common Bootstrap Scenarios
+❌ **GitHub permissions prevent branch creation**
 
-#### Starting from Scratch
+### Quick Fix Commands
 
-```json
-{
-    "initial-version": "0.1.0",
-    "bootstrap-sha": "current-commit-sha"
-}
+**Option 1: Repository Settings Fix**
+1. Go to Settings → Actions → General
+2. Set "Workflow permissions" to "Read and write permissions"
+3. Check "Allow GitHub Actions to create and approve pull requests"
+4. Re-run the workflow
+
+**Option 2: Manual Release Branch**
+```bash
+# Create the exact branch release-please wants
+git checkout -b release-please--branches--main--components--katsu
+
+# Add basic changelog
+echo "# Changelog
+
+## [0.1.0] - $(date +%Y-%m-%d)
+
+### Features
+- Initial project setup with CI/CD pipeline
+- Conventional commits with commitizen and commitlint
+- Automated releases with release-please
+- Comprehensive documentation and workflows" > CHANGELOG.md
+
+# Update version in package.json
+npm version 0.1.0 --no-git-tag-version
+
+# Commit the release
+git add .
+git commit -m "chore: release v0.1.0"
+git push origin release-please--branches--main--components--katsu
 ```
 
-#### Existing Stable Project
-
-```json
-{
-    "initial-version": "1.0.0",
-    "bootstrap-sha": "latest-release-commit"
-}
-```
-
-#### Beta/Pre-release
-
-```json
-{
-    "initial-version": "0.1.0-beta.1",
-    "bootstrap-sha": "current-commit-sha"
-}
-```
-
-### Recovery from Failed Releases
-
-If release-please is completely broken:
-
-1. **Delete Release PRs**: Close any existing release PRs
-2. **Remove Tags**: `git tag -d v1.0.0 && git push origin :refs/tags/v1.0.0`
-3. **Reset Configuration**: Use bootstrap approach above
-4. **Start Fresh**: Create new conventional commit
-
----
-
-**Note**: The bootstrap approach is the safest and most commonly used method for adding release-please to existing repositories. It preserves your git history while enabling automated releases going forward.
+Then create a PR from this branch to main with title "chore: release v0.1.0".
